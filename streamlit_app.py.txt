@@ -1,0 +1,45 @@
+import requests
+import openai
+import streamlit as st
+
+# ===== Notion 設定 =====
+NOTION_TOKEN = st.secrets["NOTION_TOKEN"]  # 不要寫在程式碼裡
+PAGE_ID = st.secrets["PAGE_ID"]            # 或 Database ID
+
+headers = {
+    "Authorization": f"Bearer {NOTION_TOKEN}",
+    "Notion-Version": "2022-06-28",
+}
+
+def get_page_content():
+    url = f"https://api.notion.com/v1/blocks/{PAGE_ID}/children"
+    res = requests.get(url, headers=headers)
+    data = res.json()
+    text_content = []
+    for block in data.get("results", []):
+        if block["type"] == "paragraph":
+            texts = block["paragraph"]["text"]
+            for t in texts:
+                text_content.append(t["plain_text"])
+    return "\n".join(text_content)
+
+# ===== GPT 設定 =====
+openai.api_key = st.secrets["OPENAI_API_KEY"]
+
+def ask_gpt(question, context):
+    prompt = f"以下是 Notion 資料：\n{context}\n\n請回答：{question}"
+    res = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return res.choices[0].message["content"]
+
+# ===== Streamlit 介面 =====
+st.title("夥伴專屬 Notion AI 助理")
+
+question = st.text_input("請輸入你的問題：")
+
+if question:
+    page_content = get_page_content()
+    answer = ask_gpt(question, page_content)
+    st.write("AI 回答：", answer)
