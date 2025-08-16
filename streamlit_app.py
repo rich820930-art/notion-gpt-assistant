@@ -22,20 +22,20 @@ def get_page_content():
                 text_content.append(t["plain_text"])
     return "\n".join(text_content)
 
-# ===== GPT 設定 =====
+# ===== GPT 設定（新版 API） =====
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 def ask_gpt(question, context):
     prompt = f"以下是 Notion 資料：\n{context}\n\n請回答：{question}"
     try:
-        res = openai.ChatCompletion.create(
+        res = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "你是一個幫助使用者的助理"},
                 {"role": "user", "content": prompt}
             ]
         )
-        return res.choices[0].message["content"]
+        return res.choices[0].message.content
     except Exception as e:
         return f"呼叫 GPT 時發生錯誤：{e}"
 
