@@ -1,6 +1,6 @@
 import requests
-import openai
 import streamlit as st
+from gpt4all import GPT4All
 
 # ===== Notion 設定 =====
 NOTION_TOKEN = st.secrets["NOTION_TOKEN"]
@@ -22,25 +22,21 @@ def get_page_content():
                 text_content.append(t["plain_text"])
     return "\n".join(text_content)
 
-# ===== GPT 設定（新版 API） =====
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+# ===== GPT4All 設定 =====
+# 下載模型後放在本地，例如：gpt4all-lora-quantized.bin
+model_path = "gpt4all-lora-quantized.bin"
+gpt_model = GPT4All(model_path)
 
 def ask_gpt(question, context):
     prompt = f"以下是 Notion 資料：\n{context}\n\n請回答：{question}"
     try:
-        res = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "你是一個幫助使用者的助理"},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return res.choices[0].message.content
+        response = gpt_model.generate(prompt)
+        return response
     except Exception as e:
-        return f"呼叫 GPT 時發生錯誤：{e}"
+        return f"GPT4All 發生錯誤：{e}"
 
 # ===== Streamlit 介面 =====
-st.title("夥伴專屬 Notion AI 助理")
+st.title("夥伴專屬 Notion AI 助理（免費版）")
 question = st.text_input("請輸入你的問題：")
 if question:
     with st.spinner("AI 正在思考中..."):
